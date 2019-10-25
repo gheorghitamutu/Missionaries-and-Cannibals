@@ -158,7 +158,7 @@ int main()
 	{
 		std::cout << std::left << std::setw(pr) << stat.first << " [" << std::right << std::setw(pl) <<
 			std::accumulate(stat.second.first->begin(), stat.second.first->end(), 0) / instanceCount << "t|" <<
-			std::setw(pl) << std::accumulate(stat.second.second->begin(), stat.second.second->end(), 0) / instanceCount << "ns] " <<
+			std::setw(pl) << std::accumulate(stat.second.second->begin(), stat.second.second->end(), 0LL) / instanceCount << "ns] " <<
 			std::endl;
 	}
 
