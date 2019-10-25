@@ -4,62 +4,61 @@
 	https://stackoverflow.com/questions/15179481/how-to-calculate-distance-between-2-points-in-a-2d-matrix
 	https://uk.mathworks.com/matlabcentral/answers/413437-how-calculate-distance-between-points-in-matrices
 */
-State* AStar::Pick(State* source, std::vector<State*>* neighbors)
+void AStar::Sort(State* source, std::vector<State*>* neighbors)
 {
-	if (neighbors->size() == 0)
-	{
-		throw "Invalid call on A* Pick()";
-	}
-
-	int maxMissionaries = 0;
-	int maxCannibals = 0;
-	   
 	/*
 		sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2);
 		where x1 = 0 missionaries and y1 = 0 cannibals
 		also called max distance from *initial* source to target
+			   			
+		Tratam si cazul cand flip matricea pentru ca suntem pe malul drept.
+		Pe o pereche 30|30|4 reduce de la 61 tranzitii la 60.			
 	*/
+
 	const double maxDist =
 		std::sqrt((double)source->nm * source->nm + (double)source->nc * source->nc);
 
-	double dist = maxDist;
+	//std::cout << "AStar::Sort Elems: " << neighbors->size() << std::endl;
+	std::sort(neighbors->begin(), neighbors->end(),
+		[=](const State* a, const State* b) -> bool {
 
-	State* closestState = nullptr;
+			//std::cout << "sort" << std::endl;
 
-	for (const auto& child : *neighbors)
-	{
-		maxMissionaries = 
-			std::max(child->GetMissionariesFromCurrentShore(), maxMissionaries);
-		maxCannibals = 
-			std::max(child->GetCannibalsFromCurrentShore(), maxCannibals);
-			   
-		maxMissionaries = std::min(source->bc, maxMissionaries);
-		maxCannibals = std::min(source->bc, maxCannibals);
-			   
-		const double x1 = maxMissionaries;
-		const double y1 = maxCannibals;
-		const double x2 = source->nm;
-		const double y2 = source->nc;
+			//if (source->mmal1 != source->cmal1)
+			//{
+			//	return (a->mmal1 + a->cmal1) / a->bc <
+			//		(b->mmal1 + b->cmal1) / b->bc;
+			//}
 
-		/*
-			Tratam si cazul cand flip matricea pentru ca suntem pe malul drept.
-			Pe o pereche 30|30|4 reduce de la 61 tranzitii la 60.
-		*/
-		const double tempDist = ((source->bp == BoatPosition::LEFT) ?
-			std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)) :
-			maxDist - std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
-
-		if (tempDist <= dist)
-		{
-			dist = tempDist;
-			closestState = child;
+			int aMaxMis =
+				std::min(source->bc, std::max(a->GetMissionariesFromCurrentShore(), aMaxMis));
+			int aMaxCan =
+				std::min(source->bc, std::max(a->GetCannibalsFromCurrentShore(), aMaxCan));
+			
+			const double ax1 = aMaxMis;
+			const double ay1 = aMaxCan;
+			const double ax2 = source->nm;
+			const double ay2 = source->nc;
+			
+			const double aDist = ((source->bp == BoatPosition::LEFT) ?
+				std::sqrt((ax2 - ax1) * (ax2 - ax1) + (ay2 - ay1) * (ay2 - ay1)) :
+				maxDist - std::sqrt((ax2 - ax1) * (ax2 - ax1) + (ay2 - ay1) * (ay2 - ay1)));
+			
+			int bMaxMis =
+				std::min(source->bc, std::max(b->GetMissionariesFromCurrentShore(), bMaxMis));
+			int bMaxCan =
+				std::min(source->bc, std::max(b->GetCannibalsFromCurrentShore(), bMaxCan));
+			
+			const double bx1 = bMaxMis;
+			const double by1 = bMaxCan;
+			const double bx2 = source->nm;
+			const double by2 = source->nc;
+			
+			const double bDist = ((source->bp == BoatPosition::LEFT) ?
+				std::sqrt((bx2 - bx1) * (bx2 - bx1) + (by2 - by1) * (by2 - by1)) :
+				maxDist - std::sqrt((bx2 - bx1) * (bx2 - bx1) + (by2 - by1) * (by2 - by1)));
+			
+			return aDist < bDist;
 		}
-	}
-
-	if (closestState == nullptr)
-	{
-		throw "A* next state not picked!";
-	}
-
-	return closestState;
+	);
 }

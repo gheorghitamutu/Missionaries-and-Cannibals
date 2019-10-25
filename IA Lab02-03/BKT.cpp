@@ -1,6 +1,6 @@
 #include "BKT.h"
 
-State* BKT::Pick(State* source, std::vector<State*>* neighbors)
+void BKT::Sort(State* source, std::vector<State*>* neighbors)
 {
-	return neighbors->at(0);
+	// nothing
 }

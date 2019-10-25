@@ -19,7 +19,6 @@ class Algorithm
 protected:
 	std::vector<State*> path;
 	std::vector<State*> visited;
-	std::vector<State*> toVisit;
 
 	int transitionsCount = 0; // a call on Search function = 1 transition
 
@@ -28,7 +27,7 @@ protected:
 	bool targetReached = false;
 public:
 	virtual void FindSolution(State* source);	
-	virtual State* Pick(State* source, std::vector<State*>* neighbors) = 0;
+	virtual void Sort(State* source, std::vector<State*>* neighbors) = 0;
 	virtual bool Search(State* source, int limit = -1);
 	virtual void PrintSolutionPath();
 	int GetTransitionsCount();

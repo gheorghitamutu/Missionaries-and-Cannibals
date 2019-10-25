@@ -40,28 +40,23 @@ int main()
 	std::vector<std::pair<int, int>> pairs;
 	while (pairs.size() < instanceCount)
 	{
-		const int boatCapacity = boat(generator);
 		const int peopleCount = people(generator);
+		const int boatCapacity = boat(generator);
 
 		// there are some invalid combinations -> rule them out
-		bool invalid = false;
+		bool targetReached = false;
 		for (const auto& alg : algs)
 		{
 			Instance instance(peopleCount, peopleCount, boatCapacity);
 			instance.SetAlgorithm(alg);
 			instance.Solve();
 
-			if (instance.TargetHasBeenReached() == false)
-			{
-				invalid = true;
-				break;
-			}
+			targetReached = instance.TargetHasBeenReached();
+
+			if (targetReached == false) break;
 		}
 
-		if (invalid == false)
-		{
-			pairs.push_back({ boatCapacity,peopleCount });
-		}
+		if (targetReached) pairs.push_back({ boatCapacity,peopleCount });
 	}
 
 	std::vector<int> randomTransitionsCount;
@@ -81,94 +76,47 @@ int main()
 		// setup
 		const int boatCapacity = pairs.at(i).first;
 		const int peopleCount = pairs.at(i).second;
-		
+
 		std::cout << "\rSolving instance #" << i + 1;// << " [" << boatCapacity << "|" << peopleCount << "]!";
 
-		Instance iRandom(peopleCount, peopleCount, boatCapacity);
-		iRandom.SetAlgorithm(Algorithms::Random);
-		
-		Instance iBKT(peopleCount, peopleCount, boatCapacity);
-		iBKT.SetAlgorithm(Algorithms::BKT);
-
-		Instance iIDDFS(peopleCount, peopleCount, boatCapacity);
-		iIDDFS.SetAlgorithm(Algorithms::IDDFS);
-		
-		Instance iAStar(peopleCount, peopleCount, boatCapacity);
-		iAStar.SetAlgorithm(Algorithms::AStar);
-			  
-		// run and count
-
-		// -------------------- Start Random ------------------------------
-
+		for (const auto& alg : algs)
 		{
-			const auto begin = std::chrono::steady_clock::now();
+			Instance instance(peopleCount, peopleCount, boatCapacity);
+			instance.SetAlgorithm(alg);
 
-			iRandom.Solve();
+			const auto begin = std::chrono::steady_clock::now(); 
+			instance.Solve();
+			const auto end = std::chrono::steady_clock::now();
 
-			randomDuration.push_back(
-				std::chrono::duration_cast<std::chrono::nanoseconds>(
-					std::chrono::steady_clock::now() - begin).count());
+			const auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
 
-			randomTransitionsCount.push_back(iRandom.GetTransitionsCount());
+			switch (alg)
+			{
+			case Algorithms::Random:
+				//std::cout << std::endl << "Random solution: ";
+				randomDuration.push_back(delta);
+				randomTransitionsCount.push_back(instance.GetTransitionsCount());
+				break;
+			case Algorithms::BKT:
+				//std::cout << std::endl << "BKT solution: ";
+				BKTDuration.push_back(delta);
+				BKTTransitionsCount.push_back(instance.GetTransitionsCount());
+				break;
+			case Algorithms::IDDFS:
+				//std::cout << std::endl << "IDDFS solution: ";
+				IDDFSDuration.push_back(delta);
+				IDDFSTransitionsCount.push_back(instance.GetTransitionsCount());
+				break;
+			case Algorithms::AStar:
+				//std::cout << std::endl << "A* solution: ";
+				aStarDuration.push_back(delta);
+				aStarTransitionsCount.push_back(instance.GetTransitionsCount());
+				break;
+			default:
+				// nothing
+				break;
+			}
 		}
-
-		// -------------------- Start BKT ---------------------------------
-
-		{
-			const auto begin = std::chrono::steady_clock::now();
-
-			iBKT.Solve();
-
-			BKTDuration.push_back(
-				std::chrono::duration_cast<std::chrono::nanoseconds>(
-					std::chrono::steady_clock::now() - begin).count());
-
-			BKTTransitionsCount.push_back(iBKT.GetTransitionsCount());
-		}
-
-		// -------------------- Start IDDFS --------------------------------
-
-		{
-			const auto begin = std::chrono::steady_clock::now();
-
-			iIDDFS.Solve();
-
-			IDDFSDuration.push_back(
-				std::chrono::duration_cast<std::chrono::nanoseconds>(
-					std::chrono::steady_clock::now() - begin).count());
-
-			IDDFSTransitionsCount.push_back(iIDDFS.GetTransitionsCount());
-		}
-
-		// -------------------- Start A* ----------------------------------
-
-		{
-			const auto begin = std::chrono::steady_clock::now();
-
-			iAStar.Solve();
-
-			aStarDuration.push_back(
-				std::chrono::duration_cast<std::chrono::nanoseconds>(
-					std::chrono::steady_clock::now() - begin).count());
-
-			aStarTransitionsCount.push_back(iAStar.GetTransitionsCount());
-		}
-
-		//std::cout << std::endl << "Random solution: ";
-		//iRandom.PrintSolutionPath();
-		//std::cout << std::endl;
-		//
-		//std::cout << std::endl << "BKT solution: ";
-		//iBKT.PrintSolutionPath();
-		//std::cout << std::endl;
-		//
-		//std::cout << std::endl << "IDDFS solution: ";
-		//iIDDFS.PrintSolutionPath();
-		//std::cout << std::endl;
-		//
-		//std::cout << std::endl << "A* solution: ";
-		//iAStar.PrintSolutionPath();
-		//std::cout << std::endl;
 	}
 
 	std::cout << " -> All done!" << std::endl;
@@ -176,41 +124,43 @@ int main()
 	const int pr = 6;	// padding right
 	const int pl = 12;	// padding left
 
-	std::cout << "Stats" << std::endl;
+	std::vector<std::pair<const char*, std::pair<std::vector<int>*, std::vector<long long>*>>> stats = {
+		{"Random [" ,	{ &randomTransitionsCount,	&randomDuration	} },
+		{"BKT [" ,		{ &BKTTransitionsCount,		&BKTDuration	} },
+		{"IDDFS [" ,	{ &IDDFSTransitionsCount,	&IDDFSDuration	} },
+		{"A* [" ,		{ &aStarTransitionsCount,	&aStarDuration	} },
+	};
+
+	std::cout << std::endl << "Stats" << std::endl;
 	for (int i = 0; i < instanceCount; i++)
 	{
 		std::cout << "Instance: ["	<< std::setw(2) << i << "] -> [" << std::setw(2) << pairs.at(i).first << "bc|" << std::setw(2) << pairs.at(i).second << "nm|nc] ";
 		
-		std::cout << "Random ["		<< std::setw(pl) << randomTransitionsCount.at(i)	<< "t|" << std::setw(pl) << randomDuration.at(i)	<< "ns] ";
-		std::cout << "BKT ["		<< std::setw(pl) << BKTTransitionsCount.at(i)		<< "t|" << std::setw(pl) << BKTDuration.at(i)		<< "ns] ";
-		std::cout << "IDDFS ["		<< std::setw(pl) << IDDFSTransitionsCount.at(i)		<< "t|" << std::setw(pl) << IDDFSDuration.at(i)		<< "ns] ";
-		std::cout << "A* ["			<< std::setw(pl) << aStarTransitionsCount.at(i)		<< "t|" << std::setw(pl) << aStarDuration.at(i)		<< "ns] ";
-		
+		for (const auto& stat : stats)
+		{
+			std::cout << stat.first << std::setw(pl) << 
+				stat.second.first->at(i) << "t|" << std::setw(pl) <<
+				stat.second.second->at(i) << "ns] ";
+		}
+
 		std::cout << std::endl;
 	}
 
 	std::cout << std::endl;
 	std::cout << "Average transitions|time (in nanosecons)" << std::endl;
 
-	std::cout << std::left << std::setw(pr) << "Random" << " [" << std::right << std::setw(pl) <<
-		std::accumulate(randomTransitionsCount.begin(), randomTransitionsCount.end(), 0) / instanceCount << "t|" <<
-		std::setw(pl) << std::accumulate(randomDuration.begin(), randomDuration.end(), 0) / instanceCount << "ns] " <<
-		std::endl;
+	stats.at(0).first = "Random";
+	stats.at(1).first = "BKT";
+	stats.at(2).first = "IDDFS";
+	stats.at(3).first = "A*";
 
-	std::cout << std::left << std::setw(pr) << "BKT" << " [" << std::right << std::setw(pl) <<
-		std::accumulate(BKTTransitionsCount.begin(), BKTTransitionsCount.end(), 0) / instanceCount << "t|" <<
-		std::setw(pl) << std::accumulate(BKTDuration.begin(), BKTDuration.end(), 0) / instanceCount << "ns] " <<
-		std::endl;
-
-	std::cout << std::left << std::setw(pr) << "IDDFS" << " [" << std::right << std::setw(pl) <<
-		std::accumulate(IDDFSTransitionsCount.begin(), IDDFSTransitionsCount.end(), 0) / instanceCount << "t|" <<
-		std::setw(pl) << std::accumulate(IDDFSDuration.begin(), IDDFSDuration.end(), 0) / instanceCount << "ns] " <<
-		std::endl;
-
-	std::cout << std::left << std::setw(pr) << "A*" << " [" << std::right << std::setw(pl) <<
-		std::accumulate(aStarTransitionsCount.begin(), aStarTransitionsCount.end(), 0) / instanceCount << "t|" <<
-		std::setw(pl) << std::accumulate(aStarDuration.begin(), aStarDuration.end(), 0) / instanceCount << "ns] " <<
-		std::endl;
+	for (const auto& stat : stats)
+	{
+		std::cout << std::left << std::setw(pr) << stat.first << " [" << std::right << std::setw(pl) <<
+			std::accumulate(stat.second.first->begin(), stat.second.first->end(), 0) / instanceCount << "t|" <<
+			std::setw(pl) << std::accumulate(stat.second.second->begin(), stat.second.second->end(), 0) / instanceCount << "ns] " <<
+			std::endl;
+	}
 
 	std::cout << std::endl;
 

@@ -5,6 +5,6 @@
 class BKT : public Algorithm
 {
 public:
-	State* Pick(State* source, std::vector<State*>* neighbors) override;
+	void Sort(State* source, std::vector<State*>* neighbors) override;
 };
 
